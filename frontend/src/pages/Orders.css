@@ -1,0 +1,98 @@
+/* Container */
+.orders-container {
+  padding: 24px;
+  font-family: "Inter", sans-serif;
+}
+
+/* Header */
+.orders-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.orders-header h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+/* Refresh Button */
+.refresh-btn {
+  background-color: #4a7dfc;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.refresh-btn:hover {
+  background-color: #2f63e0;
+}
+
+/* Table */
+.orders-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.orders-table th {
+  background-color: #f5f6f8;
+  padding: 12px;
+  text-align: left;
+  font-size: 14px;
+  color: #333;
+  border-bottom: 1px solid #e2e2e2;
+}
+
+.orders-table td {
+  padding: 12px;
+  border-bottom: 1px solid #f0f0f0;
+  font-size: 14px;
+  color: #444;
+}
+
+/* Row Hover */
+.orders-table tr:hover td {
+  background-color: #f9fbff;
+}
+
+/* Status Badges */
+.status-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.status-badge.paid {
+  background-color: #d1f4e0;
+  color: #0b7a37;
+}
+
+.status-badge.pending {
+  background-color: #fff4cc;
+  color: #b88a00;
+}
+
+.status-badge.refunded {
+  background-color: #ffe0e0;
+  color: #b30000;
+}
+
+/* Loading & No Orders */
+.loading,
+.no-orders {
+  margin-top: 20px;
+  font-size: 15px;
+}

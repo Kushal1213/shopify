@@ -1,0 +1,184 @@
+/* Container */
+
+.customers-container {
+  padding: 24px;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background-color: #f5f6fa;
+  min-height: 100vh;
+}
+
+.customers-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 20px;
+}
+
+.customers-header h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.customers-subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+/* Empty state */
+
+.customers-empty {
+  margin-top: 16px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+/* Customer card */
+
+.customer-card {
+  background-color: #ffffff;
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+  border: 1px solid #e5e7eb;
+}
+
+.customer-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.customer-name {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.customer-email {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.customer-meta {
+  display: flex;
+  gap: 8px;
+}
+
+.meta-pill {
+  padding: 4px 10px;
+  font-size: 12px;
+  border-radius: 999px;
+  background-color: #eef2ff;
+  color: #3730a3;
+  font-weight: 500;
+}
+
+/* Order list */
+
+.order-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+  border-top: 1px solid #f3f4f6;
+}
+
+.order-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f9fafb;
+}
+
+.order-item:last-child {
+  border-bottom: none;
+}
+
+.order-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.order-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #111827;
+}
+
+.order-product {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.order-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.order-amount {
+  font-size: 14px;
+  font-weight: 600;
+  color: #059669;
+}
+
+/* Status badge */
+
+.order-status {
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+/* Status colors */
+
+.status-paid {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.status-pending,
+.status-authorized {
+  background-color: #fef9c3;
+  color: #854d0e;
+}
+
+.status-refunded,
+.status-voided {
+  background-color: #fee2e2;
+  color: #b91c1c;
+}
+
+.status-unknown {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+/* Responsive */
+
+@media (max-width: 640px) {
+  .customer-card {
+    padding: 14px;
+  }
+
+  .order-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .order-meta {
+    justify-content: space-between;
+    width: 100%;
+  }
+}
