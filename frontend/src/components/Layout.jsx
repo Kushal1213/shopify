@@ -3,11 +3,16 @@ import { useEffect } from "react";
 import { useShop } from "../hooks/useShop";
 
 const NAV_LINKS = [
-  { to: "/",          label: "Home",      primary: true  },
-  { to: "/analytics", label: "Analytics"               },
-  { to: "/products",  label: "Products"                },
-  { to: "/customers", label: "Customers"               },
-  { to: "/orders",    label: "Orders"                  },
+  { to: "/",             label: "Home",      primary: true },
+  { to: "/analytics",   label: "Analytics"              },
+  { to: "/products",    label: "Products"               },
+  { to: "/customers",   label: "Customers"              },
+  { to: "/orders",      label: "Orders"                 },
+];
+
+const ML_LINKS = [
+  { to: "/ml/forecast", label: "📈 Sales Forecast" },
+  { to: "/ml/segment",  label: "👥 Segmentation"   },
 ];
 
 export default function Layout({ children }) {
@@ -15,22 +20,21 @@ export default function Layout({ children }) {
   const shop = useShop();
   const API_BASE = import.meta.env.VITE_API_URL || window.location.origin;
 
-  // Auto-auth check: redirect to OAuth if app is not installed for this shop
   useEffect(() => {
     if (!shop) return;
-
     (async () => {
       try {
         const res = await fetch(`${API_BASE}/api/check-auth?shop=${shop}`);
         const { authenticated } = await res.json();
-        if (!authenticated) {
-          window.top.location.href = `${API_BASE}/auth?shop=${shop}`;
-        }
+        if (!authenticated) window.top.location.href = `${API_BASE}/auth?shop=${shop}`;
       } catch (err) {
         console.error("Auth check failed:", err);
       }
     })();
   }, [shop, API_BASE]);
+
+  const linkClass = (to) =>
+    ["btn", "secondary", location.pathname === to ? "active" : ""].filter(Boolean).join(" ");
 
   return (
     <div className="app-body">
@@ -43,21 +47,28 @@ export default function Layout({ children }) {
         </header>
 
         <div className="card">
-          <div className="section-title">Quick navigation</div>
-          <p className="small">Choose what you want to view for this store.</p>
-
+          <div className="section-title">Navigation</div>
           <div className="btn-row">
-            {NAV_LINKS.map(({ to, label, primary }) => {
-              const isActive = location.pathname === to;
-              const cls = ["btn", primary ? "" : "secondary", isActive ? "active" : ""]
-                .filter(Boolean)
-                .join(" ");
-              return (
-                <Link key={to} className={cls} to={`${to}?shop=${encodeURIComponent(shop)}`}>
-                  {label}
-                </Link>
-              );
-            })}
+            {NAV_LINKS.map(({ to, label, primary }) => (
+              <Link key={to}
+                className={["btn", primary ? "" : "secondary", location.pathname === to ? "active" : ""].filter(Boolean).join(" ")}
+                to={`${to}?shop=${encodeURIComponent(shop)}`}>
+                {label}
+              </Link>
+            ))}
+          </div>
+
+          <div className="section-title" style={{ marginTop: 14 }}>
+            🤖 Machine Learning
+          </div>
+          <div className="btn-row">
+            {ML_LINKS.map(({ to, label }) => (
+              <Link key={to} className={linkClass(to)}
+                to={`${to}?shop=${encodeURIComponent(shop)}`}
+                style={location.pathname === to ? { borderColor: "#008060", color: "#008060" } : {}}>
+                {label}
+              </Link>
+            ))}
           </div>
         </div>
 

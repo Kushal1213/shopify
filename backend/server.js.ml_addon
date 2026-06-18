@@ -1,0 +1,25 @@
+
+// ─── ML Service Proxy ─────────────────────────────────────────────────────────
+// Forwards /api/ml/* requests to the FastAPI ML microservice.
+// ML_SERVICE_URL defaults to http://localhost:8000
+
+const ML_SERVICE_URL = process.env.ML_SERVICE_URL || "http://localhost:8000";
+
+app.use("/api/ml", async (req, res) => {
+  const mlPath = req.url; // e.g. /predict/sales
+  const targetUrl = `${ML_SERVICE_URL}${mlPath}`;
+
+  try {
+    const { data, status } = await axios({
+      method: req.method,
+      url:    targetUrl,
+      data:   req.method !== "GET" ? req.body : undefined,
+      headers: { "Content-Type": "application/json" },
+    });
+    res.status(status).json(data);
+  } catch (err) {
+    const status = err.response?.status || 502;
+    const detail = err.response?.data  || { error: "ML service unavailable" };
+    res.status(status).json(detail);
+  }
+});
