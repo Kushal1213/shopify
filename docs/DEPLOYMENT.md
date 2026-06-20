@@ -1,5 +1,26 @@
 # Deployment Guide — Render
 
+## Quick start — free public showcase (demo mode)
+
+The repo's [`render.yaml`](../render.yaml) ships with `DEMO_MODE=true`, so you can
+deploy a **free, zero-config** public demo with no database and no Shopify
+credentials:
+
+1. Go to <https://dashboard.render.com> → **New** → **Blueprint** and connect
+   this repo. Render reads `render.yaml` and proposes both services on the
+   **free** plan.
+2. Click **Apply**. No environment variables to fill in.
+3. Open the `shopify-app` URL — the app loads bundled sample data (orders,
+   customers, products, analytics) and live ML forecasting/segmentation.
+
+> Free services spin down when idle, so the first request after a quiet period
+> takes ~30–60s to wake. That's expected for a showcase.
+
+For a **real** Shopify install (live store data, OAuth, webhooks), set
+`DEMO_MODE=false` and follow the full guide below.
+
+---
+
 This guide deploys the full stack on [Render](https://render.com) using the
 [`render.yaml`](../render.yaml) Blueprint at the repo root. Two services are
 created:

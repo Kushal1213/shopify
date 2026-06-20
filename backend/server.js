@@ -6,11 +6,16 @@ import fs from "fs";
 import mysql from "mysql2/promise";
 import { fileURLToPath } from "url";
 import crypto from "crypto";
+import * as demo from "./demoData.js";
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// DEMO_MODE serves bundled sample data instead of MySQL / the Shopify Admin API,
+// so the app can run as a free public showcase with no DB and no credentials.
+const DEMO_MODE = process.env.DEMO_MODE === "true";
 
 const { SHOPIFY_API_KEY, SHOPIFY_API_SECRET, SCOPES, APP_URL } = process.env;
 
@@ -38,25 +43,31 @@ if (process.env.DB_SSL_CA) {
 
 // A connection pool (rather than a single connection) keeps the server alive
 // across idle disconnects and transparently reconnects on demand.
-const db = mysql.createPool({
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  ssl: sslConfig,
-  waitForConnections: true,
-  connectionLimit: 10,
-  enableKeepAlive: true,
-});
+const db = DEMO_MODE
+  ? null
+  : mysql.createPool({
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      ssl: sslConfig,
+      waitForConnections: true,
+      connectionLimit: 10,
+      enableKeepAlive: true,
+    });
 
-try {
-  const conn = await db.getConnection();
-  conn.release();
-  console.log("✅ Database connected");
-} catch (err) {
-  console.error("⚠  Initial database connection failed:", err.message);
-  console.error("   The server will keep running and retry on each request.");
+if (DEMO_MODE) {
+  console.log("🎭 DEMO_MODE enabled — serving bundled sample data (no database).");
+} else {
+  try {
+    const conn = await db.getConnection();
+    conn.release();
+    console.log("✅ Database connected");
+  } catch (err) {
+    console.error("⚠  Initial database connection failed:", err.message);
+    console.error("   The server will keep running and retry on each request.");
+  }
 }
 
 // ─── Schema Migrations ────────────────────────────────────────────────────────
@@ -87,11 +98,13 @@ async function runMigrations() {
   `);
 }
 
-try {
-  await runMigrations();
-} catch (err) {
-  console.error("⚠  Schema migration failed:", err.message);
-  console.error("   Tables will be created on the next successful DB connection.");
+if (!DEMO_MODE) {
+  try {
+    await runMigrations();
+  } catch (err) {
+    console.error("⚠  Schema migration failed:", err.message);
+    console.error("   Tables will be created on the next successful DB connection.");
+  }
 }
 
 // ─── Token Helpers ────────────────────────────────────────────────────────────
@@ -126,6 +139,8 @@ function verifyWebhookHmac(rawBody, hmacHeader) {
 
 // ─── Health Check ─────────────────────────────────────────────────────────────
 app.get("/api/health", async (req, res) => {
+  if (DEMO_MODE) return res.json({ status: "ok", demo: true });
+
   let dbOk = false;
   try {
     await db.query("SELECT 1");
@@ -184,6 +199,8 @@ app.get("/auth/callback", async (req, res) => {
  * Used by the frontend to verify whether the merchant has installed the app.
  */
 app.get("/api/check-auth", async (req, res) => {
+  if (DEMO_MODE) return res.json({ authenticated: true });
+
   const { shop } = req.query;
   if (!shop) return res.json({ authenticated: false });
 
@@ -198,6 +215,8 @@ app.get("/api/check-auth", async (req, res) => {
  * Fetches up to 20 products from the Shopify GraphQL Admin API.
  */
 app.get("/api/products", async (req, res) => {
+  if (DEMO_MODE) return res.json(demo.getProducts());
+
   const { shop } = req.query;
   if (!shop) return res.status(400).json({ error: "Missing shop parameter" });
 
@@ -300,6 +319,8 @@ app.post("/webhooks/orders/create", async (req, res) => {
  * Returns all persisted orders for a given shop, newest first.
  */
 app.get("/api/orders", async (req, res) => {
+  if (DEMO_MODE) return res.json(demo.getOrders());
+
   const { shop } = req.query;
   if (!shop) return res.status(400).json({ error: "Missing shop parameter" });
 
@@ -322,6 +343,8 @@ app.get("/api/orders", async (req, res) => {
  * Returns unique customers aggregated with their full order history.
  */
 app.get("/api/customers", async (req, res) => {
+  if (DEMO_MODE) return res.json(demo.getCustomers());
+
   const { shop } = req.query;
   if (!shop) return res.status(400).json({ error: "Missing shop parameter" });
 
@@ -364,6 +387,8 @@ app.get("/api/customers", async (req, res) => {
  * and order count per day — all scoped to the requesting shop.
  */
 app.get("/api/analytics", async (req, res) => {
+  if (DEMO_MODE) return res.json(demo.getAnalytics());
+
   const { shop } = req.query;
   if (!shop) return res.status(400).json({ error: "Missing shop parameter" });
 
@@ -442,11 +467,26 @@ app.use("/api/ml", async (req, res) => {
 
 // ─── Serve React Frontend ──────────────────────────────────────────────────────
 const dist = path.join(__dirname, "..", "frontend", "dist");
+
+// Demo mode: inject the bundled demo shop on the root request before the static
+// middleware serves index.html, so the bare public URL loads data out of the box.
+if (DEMO_MODE) {
+  app.get("/", (req, res, next) => {
+    if (!req.query.shop) return res.redirect(`/?shop=${encodeURIComponent(demo.DEMO_SHOP)}`);
+    next();
+  });
+}
+
 app.use(express.static(dist));
 
 app.get("*", (req, res, next) => {
   if (req.path.startsWith("/api") || req.path.startsWith("/auth") || req.path.startsWith("/webhooks")) {
     return next();
+  }
+  // In demo mode the pages need a `shop` query param to load data; inject the
+  // bundled demo shop so the bare public URL works out of the box.
+  if (DEMO_MODE && !req.query.shop) {
+    return res.redirect(`${req.path}?shop=${encodeURIComponent(demo.DEMO_SHOP)}`);
   }
   res.sendFile(path.join(dist, "index.html"));
 });
