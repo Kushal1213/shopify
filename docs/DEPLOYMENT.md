@@ -1,58 +1,61 @@
-# Deployment Guide — Vercel
+# Deployment Guide — Render
 
-This guide walks through deploying Shopify Xeno Pro on Vercel (free tier).
+This guide deploys the full stack on [Render](https://render.com) using the
+[`render.yaml`](../render.yaml) Blueprint at the repo root. Two services are
+created:
+
+| Service | Type | What it does |
+|---|---|---|
+| `shopify-app` | Node web service | Express backend + the built React frontend |
+| `shopify-ml-service` | Python web service | FastAPI ML microservice (forecasting + segmentation) |
+
+The backend proxies `/api/ml/*` to the ML service, so the browser only ever
+talks to `shopify-app`.
 
 ## Prerequisites
 
-- Vercel account (free): https://vercel.com/signup
-- GitHub repo with this project pushed
-- Shopify Partner account with your app already created
+- A [Render](https://render.com) account
+- A managed MySQL database — e.g. [Aiven](https://aiven.io/) free tier (Render
+  does not offer managed MySQL)
+- A [Shopify Partner](https://partners.shopify.com/) account with an app created
 
 ---
 
-## Step 1 — Build the frontend locally
+## Step 1 — Provision a MySQL database
 
-```bash
-cd frontend
-npm install
-npm run build
-```
-
-Commit the `frontend/dist/` folder — the backend serves it as static files.
-
-> **Alternatively**, add a Vercel Build Command that runs `npm run build` inside `frontend/` before deploying.
+Create a MySQL instance (Aiven free tier works). Note the host, port, user,
+password, database name, and download the CA certificate.
 
 ---
 
-## Step 2 — Import project into Vercel
+## Step 2 — Create the Blueprint on Render
 
-1. Go to https://vercel.com/new
-2. Click **Import Git Repository** and select this repo
-3. Set the **Root Directory** to `backend`
-4. Set **Build Command** to *(leave empty — Node.js server, no build)*
-5. Set **Output Directory** to *(leave empty)*
-6. Set **Install Command** to `npm install`
+1. Go to <https://dashboard.render.com> → **New** → **Blueprint**
+2. Connect this GitHub repo. Render reads `render.yaml` and proposes both
+   services.
+3. Click **Apply**. The ML service builds (and trains models), and the Node
+   service builds the frontend and starts the backend. `ML_SERVICE_URL` is wired
+   automatically from the ML service.
 
 ---
 
-## Step 3 — Set environment variables
+## Step 3 — Set environment variables (`shopify-app`)
 
-In the Vercel dashboard → **Settings → Environment Variables**, add everything from `backend/.env.example`:
+In the Render dashboard → **shopify-app → Environment**, fill in the values
+marked `sync: false`:
 
 | Key | Value |
 |-----|-------|
 | `SHOPIFY_API_KEY` | Your app's API key |
 | `SHOPIFY_API_SECRET` | Your app's API secret |
 | `SHOPIFY_WEBHOOK_SECRET` | Webhook signing secret (hex) |
-| `SCOPES` | `read_products,read_orders` |
-| `APP_URL` | `https://your-app.vercel.app` |
-| `DB_HOST` | Aiven DB host |
-| `DB_PORT` | Aiven DB port |
-| `DB_USER` | Database username |
-| `DB_PASSWORD` | Database password |
-| `DB_NAME` | Database name |
+| `APP_URL` | `https://shopify-app-XXXX.onrender.com` (this service's URL) |
+| `DB_HOST` / `DB_PORT` / `DB_USER` / `DB_PASSWORD` / `DB_NAME` | From Step 1 |
+| `DB_SSL_CA` | Paste the **contents** of the Aiven `ca.pem` (inline cert) |
 
-> For `DB_SSL`: Upload your `ca.pem` file to Vercel and reference its path, or set `DB_SSL=` empty to disable SSL (not recommended for production).
+> `SCOPES` and `ML_SERVICE_URL` are already set by `render.yaml`.
+
+Save — Render redeploys automatically.
 
 ---
 
@@ -60,20 +63,20 @@ In the Vercel dashboard → **Settings → Environment Variables**, add everythi
 
 In your [Shopify Partner dashboard](https://partners.shopify.com):
 
-1. **App URL**: `https://your-app.vercel.app/auth`
-2. **Allowed redirect URLs**: `https://your-app.vercel.app/auth/callback`
+1. **App URL**: `https://shopify-app-XXXX.onrender.com/auth`
+2. **Allowed redirect URLs**: `https://shopify-app-XXXX.onrender.com/auth/callback`
 
 ---
 
 ## Step 5 — Register the webhook
 
-In Shopify Partner dashboard → **Webhooks**:
+In the Shopify Partner dashboard → **Webhooks** (or via the Admin API):
 
 - **Topic**: `orders/create`
-- **URL**: `https://your-app.vercel.app/webhooks/orders/create`
+- **URL**: `https://shopify-app-XXXX.onrender.com/webhooks/orders/create`
 - **Format**: JSON
 
-Copy the **Signing Secret** into your `SHOPIFY_WEBHOOK_SECRET` environment variable.
+Copy the **Signing Secret** into the `SHOPIFY_WEBHOOK_SECRET` env var.
 
 ---
 
@@ -81,22 +84,38 @@ Copy the **Signing Secret** into your `SHOPIFY_WEBHOOK_SECRET` environment varia
 
 Navigate to:
 ```
-https://your-app.vercel.app/auth?shop=your-store.myshopify.com
+https://shopify-app-XXXX.onrender.com/auth?shop=your-store.myshopify.com
 ```
 
-You'll be redirected through Shopify OAuth. After approving, you'll land on the dashboard.
+Approve the OAuth prompt and you'll land on the dashboard.
+
+---
+
+## Health checks
+
+- App: `GET /api/health` → `{ "status": "ok", "db": true }`
+- ML service: `GET /health` → `{ "status": "ok", "models_loaded": true }`
 
 ---
 
 ## Local Development
 
-Use [ngrok](https://ngrok.com/) to expose localhost:
-
 ```bash
-ngrok http 3000
+# 1. MySQL (Docker)
+docker run -d --name shopify-mysql -e MYSQL_ROOT_PASSWORD=rootpw \
+  -e MYSQL_DATABASE=defaultdb -e MYSQL_USER=avnadmin \
+  -e MYSQL_PASSWORD=devpassword -p 3306:3306 mysql:8
+
+# 2. ML service
+cd ml_service && pip install -r requirements.txt && python train_models.py
+uvicorn main:app --host 0.0.0.0 --port 8000
+
+# 3. Backend (configure backend/.env first — see backend/.env.example)
+cd backend && npm install && npm run dev
+
+# 4. Frontend build (served by the backend)
+cd frontend && npm install && npm run build
 ```
 
-Set `APP_URL=https://xxxx.ngrok.io` in your local `.env`, then install the app via:
-```
-https://xxxx.ngrok.io/auth?shop=your-dev-store.myshopify.com
-```
+Use [ngrok](https://ngrok.com/) (`ngrok http 3000`) to expose localhost for the
+Shopify OAuth flow, setting `APP_URL` to the ngrok URL.

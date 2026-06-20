@@ -200,22 +200,37 @@ def predict_sales(req: SalesForecastRequest):
     features  = registry.forecaster_meta["features"]
     day_names = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]
 
-    rows, predictions = [], []
     prev7  = req.prev_7d_avg
     prev30 = req.prev_30d_avg
 
+    # Pass 1 — build each day's feature row sequentially (the rolling
+    # prev_7d/prev_30d averages depend on the previous day's prediction)
+    # and collect the point (mean) forecast.
+    feature_rows, dates, mean_preds = [], [], []
     for i in range(req.days):
         d = start + timedelta(days=i)
         row = _date_features(d, req.marketing_spend, prev7, prev30)
-        rows.append(row)
+        feature_rows.append(row)
+        dates.append(d)
 
         df_row = pd.DataFrame([row])[features]
-        pred = float(registry.forecaster.predict(df_row)[0])
-        pred = max(pred, 0)
+        pred = max(float(registry.forecaster.predict(df_row)[0]), 0)
+        mean_preds.append(pred)
 
-        # Approximate prediction interval from tree variance
-        tree_preds = np.array([t.predict(df_row)[0] for t in registry.forecaster.estimators_])
-        std = float(tree_preds.std())
+        prev7  = (prev7  * 6 + pred) / 7
+        prev30 = (prev30 * 29 + pred) / 30
+
+    # Pass 2 — approximate the prediction interval from per-tree variance.
+    # Predict the whole horizon once per tree (n_trees calls) instead of
+    # once per tree per day (n_trees * days calls).
+    X_all = pd.DataFrame(feature_rows)[features]
+    tree_matrix = np.array([t.predict(X_all) for t in registry.forecaster.estimators_])
+    stds = tree_matrix.std(axis=0)
+
+    predictions = []
+    for i, d in enumerate(dates):
+        pred = mean_preds[i]
+        std  = float(stds[i])
         lower = max(pred - 1.96 * std, 0)
         upper = pred + 1.96 * std
 
@@ -227,10 +242,6 @@ def predict_sales(req: SalesForecastRequest):
             day_of_week      = day_names[d.weekday()],
             is_weekend       = d.weekday() >= 5,
         ))
-
-        # Rolling update for next iteration
-        prev7  = (prev7  * 6 + pred) / 7
-        prev30 = (prev30 * 29 + pred) / 30
 
     vals    = [p.predicted_sales for p in predictions]
     peak_i  = int(np.argmax(vals))

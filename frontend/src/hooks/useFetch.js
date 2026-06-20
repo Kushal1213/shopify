@@ -10,23 +10,34 @@ export function useFetch(url) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(!!url);
   const [error, setError] = useState(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
-  const fetchData = useCallback(async () => {
+  const refetch = useCallback(() => setReloadKey((k) => k + 1), []);
+
+  useEffect(() => {
     if (!url) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      setData(await res.json());
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [url]);
+    let ignore = false;
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+    const run = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        if (!ignore) setData(json);
+      } catch (err) {
+        if (!ignore) setError(err.message);
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    };
 
-  return { data, loading, error, refetch: fetchData };
+    run();
+    return () => {
+      ignore = true;
+    };
+  }, [url, reloadKey]);
+
+  return { data, loading, error, refetch };
 }

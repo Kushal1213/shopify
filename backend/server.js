@@ -25,49 +25,74 @@ app.use(express.json());
 // ─── Database Setup (MySQL / Aiven) ───────────────────────────────────────────
 let sslConfig;
 
-if (process.env.DB_SSL) {
+if (process.env.DB_SSL_CA) {
+  // Inline CA certificate (handy for cloud hosts where a file can't be committed)
+  console.log("🔐 Using inline SSL certificate from DB_SSL_CA");
+  sslConfig = { ca: process.env.DB_SSL_CA };
+} else if (process.env.DB_SSL) {
   console.log("🔐 Loading SSL certificate:", process.env.DB_SSL);
   sslConfig = { ca: fs.readFileSync(process.env.DB_SSL) };
 } else {
   console.warn("⚠  DB_SSL not set — SSL disabled. Not recommended in production.");
 }
 
-const db = await mysql.createConnection({
+// A connection pool (rather than a single connection) keeps the server alive
+// across idle disconnects and transparently reconnects on demand.
+const db = mysql.createPool({
   host: process.env.DB_HOST,
   port: process.env.DB_PORT,
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   ssl: sslConfig,
+  waitForConnections: true,
+  connectionLimit: 10,
+  enableKeepAlive: true,
 });
 
-console.log("✅ Database connected");
+try {
+  const conn = await db.getConnection();
+  conn.release();
+  console.log("✅ Database connected");
+} catch (err) {
+  console.error("⚠  Initial database connection failed:", err.message);
+  console.error("   The server will keep running and retry on each request.");
+}
 
 // ─── Schema Migrations ────────────────────────────────────────────────────────
-await db.execute(`
-  CREATE TABLE IF NOT EXISTS shop_tokens (
-    shop         VARCHAR(255) PRIMARY KEY,
-    access_token TEXT         NOT NULL,
-    created_at   DATETIME     DEFAULT CURRENT_TIMESTAMP,
-    updated_at   DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-  )
-`);
+async function runMigrations() {
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS shop_tokens (
+      shop         VARCHAR(255) PRIMARY KEY,
+      access_token TEXT         NOT NULL,
+      created_at   DATETIME     DEFAULT CURRENT_TIMESTAMP,
+      updated_at   DATETIME     DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `);
 
-await db.execute(`
-  CREATE TABLE IF NOT EXISTS shop_orders (
-    shop           VARCHAR(255),
-    order_id       VARCHAR(255) PRIMARY KEY,
-    order_name     VARCHAR(255),
-    product_name   VARCHAR(255),
-    customer_name  VARCHAR(255),
-    customer_email VARCHAR(255),
-    total_price    DECIMAL(10, 2),
-    created_at     DATETIME,
-    status         VARCHAR(255),
-    INDEX idx_shop (shop),
-    INDEX idx_customer_email (customer_email)
-  )
-`);
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS shop_orders (
+      shop           VARCHAR(255),
+      order_id       VARCHAR(255) PRIMARY KEY,
+      order_name     VARCHAR(255),
+      product_name   VARCHAR(255),
+      customer_name  VARCHAR(255),
+      customer_email VARCHAR(255),
+      total_price    DECIMAL(10, 2),
+      created_at     DATETIME,
+      status         VARCHAR(255),
+      INDEX idx_shop (shop),
+      INDEX idx_customer_email (customer_email)
+    )
+  `);
+}
+
+try {
+  await runMigrations();
+} catch (err) {
+  console.error("⚠  Schema migration failed:", err.message);
+  console.error("   Tables will be created on the next successful DB connection.");
+}
 
 // ─── Token Helpers ────────────────────────────────────────────────────────────
 async function saveToken(shop, token) {
@@ -98,6 +123,18 @@ function verifyWebhookHmac(rawBody, hmacHeader) {
 
   return generated === hmacHeader;
 }
+
+// ─── Health Check ─────────────────────────────────────────────────────────────
+app.get("/api/health", async (req, res) => {
+  let dbOk = false;
+  try {
+    await db.query("SELECT 1");
+    dbOk = true;
+  } catch {
+    dbOk = false;
+  }
+  res.status(dbOk ? 200 : 503).json({ status: dbOk ? "ok" : "degraded", db: dbOk });
+});
 
 // ─── Auth Routes ──────────────────────────────────────────────────────────────
 
@@ -374,9 +411,15 @@ app.get("/api/analytics", async (req, res) => {
 
 // ─── ML Service Proxy ─────────────────────────────────────────────────────────
 // Forwards /api/ml/* requests to the FastAPI ML microservice.
-// ML_SERVICE_URL defaults to http://localhost:8000
+// ML_SERVICE_URL defaults to http://localhost:8000. A scheme-less value
+// (e.g. a Render `host` reference) is normalised to https://.
 
-const ML_SERVICE_URL = process.env.ML_SERVICE_URL || "http://localhost:8000";
+function normalizeMlUrl(raw) {
+  const url = (raw || "http://localhost:8000").trim().replace(/\/+$/, "");
+  return /^https?:\/\//.test(url) ? url : `https://${url}`;
+}
+
+const ML_SERVICE_URL = normalizeMlUrl(process.env.ML_SERVICE_URL);
 
 app.use("/api/ml", async (req, res) => {
   const mlPath = req.url; // e.g. /predict/sales

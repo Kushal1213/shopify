@@ -1,12 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { Chart } from "chart.js/auto";
-import { useShop } from "../hooks/useShop";
 import "./MLForecast.css";
 
 const API_BASE = import.meta.env.VITE_API_URL || window.location.origin;
 
 export default function MLForecast() {
-  const shop = useShop();
   const chartRef  = useRef(null);
   const canvasRef = useRef(null);
 
