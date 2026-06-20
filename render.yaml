@@ -1,10 +1,42 @@
 services:
+  # ── FastAPI ML microservice (sales forecasting + customer segmentation) ──
   - type: web
     name: shopify-ml-service
     runtime: python
     rootDir: ml_service
+    plan: free
     buildCommand: pip install -r requirements.txt && python train_models.py
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
+
+  # ── Node/Express backend that also serves the built React frontend ──
+  - type: web
+    name: shopify-app
+    runtime: node
+    rootDir: .
+    plan: free
+    buildCommand: cd frontend && npm ci && npm run build && cd ../backend && npm ci
+    startCommand: cd backend && node server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 20.11.1
+      # Free public showcase: serve bundled sample data, no DB / Shopify creds.
+      # Set DEMO_MODE to false and fill in the secrets below for a real install.
+      - key: DEMO_MODE
+        value: "true"
+      # Auto-wired to the ML service host (scheme is added by the server).
+      - key: ML_SERVICE_URL
+        fromService:
+          type: web
+          name: shopify-ml-service
+          property: host
+      - key: SCOPES
+        value: read_products,read_orders,write_orders
+      # For a REAL install, set DEMO_MODE=false and add these in the Render
+      # dashboard (Environment tab): SHOPIFY_API_KEY, SHOPIFY_API_SECRET,
+      # SHOPIFY_WEBHOOK_SECRET, APP_URL, DB_HOST, DB_PORT, DB_USER,
+      # DB_PASSWORD, DB_NAME, DB_SSL_CA. See docs/DEPLOYMENT.md.
