@@ -1,10 +1,5 @@
-/* Container */
-
 .customers-container {
-  padding: 24px;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background-color: #f5f6fa;
-  min-height: 100vh;
+  padding: 28px;
 }
 
 .customers-header {
@@ -15,86 +10,86 @@
 }
 
 .customers-header h2 {
-  margin: 0;
-  font-size: 24px;
-  font-weight: 600;
-  color: #111827;
+  font-size: 28px;
+  margin: 8px 0 0;
+}
+
+.customers-subtitle,
+.customers-empty,
+.customer-email {
+  color: var(--muted);
 }
 
 .customers-subtitle {
   margin: 0;
   font-size: 13px;
-  color: #6b7280;
 }
-
-/* Empty state */
-
-.customers-empty {
-  margin-top: 16px;
-  font-size: 14px;
-  color: #6b7280;
-}
-
-/* Customer card */
 
 .customer-card {
-  background-color: #ffffff;
-  border-radius: 10px;
-  padding: 16px 18px;
-  margin-bottom: 16px;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
-  border: 1px solid #e5e7eb;
+  padding: 18px;
+  margin-bottom: 14px;
+  border: 1px solid rgba(19, 49, 37, 0.08);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 14px 34px rgba(8, 44, 33, 0.08);
 }
 
 .customer-card-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
+  align-items: flex-start;
+  gap: 18px;
+  margin-bottom: 12px;
 }
 
 .customer-name {
+  color: var(--ink);
+  font-size: 17px;
   margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: #111827;
 }
 
 .customer-email {
-  margin: 2px 0 0;
+  margin: 4px 0 0;
   font-size: 13px;
-  color: #6b7280;
 }
 
-.customer-meta {
+.customer-meta,
+.order-meta {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
-.meta-pill {
-  padding: 4px 10px;
-  font-size: 12px;
+.meta-pill,
+.order-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 10px;
   border-radius: 999px;
-  background-color: #eef2ff;
-  color: #3730a3;
-  font-weight: 500;
+  font-size: 12px;
+  font-weight: 850;
 }
 
-/* Order list */
+.meta-pill {
+  color: var(--green-800);
+  background: rgba(149, 191, 71, 0.18);
+}
 
 .order-list {
   list-style: none;
   padding: 0;
   margin: 8px 0 0;
-  border-top: 1px solid #f3f4f6;
+  border-top: 1px solid rgba(19, 49, 37, 0.08);
 }
 
 .order-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 0;
-  border-bottom: 1px solid #f9fafb;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(19, 49, 37, 0.06);
 }
 
 .order-item:last-child {
@@ -102,83 +97,53 @@
 }
 
 .order-main {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+  display: grid;
+  gap: 3px;
 }
 
 .order-name {
+  color: var(--ink);
   font-size: 14px;
-  font-weight: 500;
-  color: #111827;
+  font-weight: 850;
 }
 
 .order-product {
+  color: var(--muted);
   font-size: 13px;
-  color: #6b7280;
-}
-
-.order-meta {
-  display: flex;
-  align-items: center;
-  gap: 10px;
 }
 
 .order-amount {
+  color: var(--green-700);
   font-size: 14px;
-  font-weight: 600;
-  color: #059669;
+  font-weight: 850;
 }
-
-/* Status badge */
-
-.order-status {
-  font-size: 11px;
-  padding: 3px 9px;
-  border-radius: 999px;
-  font-weight: 600;
-  text-transform: capitalize;
-}
-
-/* Status colors */
 
 .status-paid {
-  background-color: #dcfce7;
-  color: #166534;
+  color: var(--green-700);
+  background: rgba(0, 128, 96, 0.12);
 }
 
 .status-pending,
 .status-authorized {
-  background-color: #fef9c3;
-  color: #854d0e;
+  color: #8a5c00;
+  background: rgba(245, 184, 65, 0.18);
 }
 
 .status-refunded,
 .status-voided {
-  background-color: #fee2e2;
-  color: #b91c1c;
+  color: #b42318;
+  background: rgba(217, 45, 32, 0.12);
 }
 
 .status-unknown {
-  background-color: #e5e7eb;
-  color: #374151;
+  color: #4b5563;
+  background: rgba(75, 85, 99, 0.1);
 }
 
-/* Responsive */
-
 @media (max-width: 640px) {
-  .customer-card {
-    padding: 14px;
-  }
-
+  .customer-card-header,
   .order-item {
-    flex-direction: column;
     align-items: flex-start;
-    gap: 4px;
-  }
-
-  .order-meta {
-    justify-content: space-between;
-    width: 100%;
+    flex-direction: column;
   }
 }

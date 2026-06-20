@@ -11,12 +11,15 @@ export default function Products() {
   );
 
   if (!shop) return <p className="products-error">Open this app from inside Shopify admin.</p>;
-  if (loading) return <p className="products-loading">⏳ Loading products…</p>;
-  if (error)   return <p className="products-error">Error: {error}</p>;
+  if (loading) return <p className="products-loading">Loading products...</p>;
+  if (error) return <p className="products-error">Error: {error}</p>;
 
   return (
     <div className="products-container">
-      <h3 className="products-title">Products ({products?.length ?? 0})</h3>
+      <div className="products-header">
+        <span className="section-kicker">Catalog intelligence</span>
+        <h3 className="products-title">Products ({products?.length ?? 0})</h3>
+      </div>
 
       {!products?.length && <p className="products-empty">No products found.</p>}
 
@@ -27,11 +30,13 @@ export default function Products() {
 
           return (
             <div key={node.id} className="product-card">
-              {image && (
+              {image ? (
                 <img className="product-image" src={image} alt={node.title} />
+              ) : (
+                <div className="product-image product-placeholder">{node.title?.slice(0, 1) || "P"}</div>
               )}
               <h4 className="product-title">{node.title}</h4>
-              <p className="product-price">₹{price}</p>
+              <p className="product-price">INR {price}</p>
             </div>
           );
         })}

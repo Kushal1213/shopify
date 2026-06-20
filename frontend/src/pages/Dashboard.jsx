@@ -1,5 +1,12 @@
+import { Link } from "react-router-dom";
 import { useShop } from "../hooks/useShop";
 import { useFetch } from "../hooks/useFetch";
+
+const MOMENTS = [
+  { label: "Webhook health", value: "Real-time", detail: "Orders and products synced as events arrive" },
+  { label: "ML layer", value: "Active", detail: "Forecasting and customer segmentation available" },
+  { label: "Commerce stack", value: "Shopify", detail: "Purpose-built for Shopify merchants" },
+];
 
 export default function Dashboard() {
   const shop = useShop();
@@ -10,31 +17,52 @@ export default function Dashboard() {
   );
 
   const stats = [
-    { label: "Total Orders",    value: analytics?.total_orders    ?? "—" },
-    { label: "Total Customers", value: analytics?.total_customers ?? "—" },
+    { label: "Total Orders", value: analytics?.total_orders ?? "--", accent: "green" },
+    { label: "Customers", value: analytics?.total_customers ?? "--", accent: "lime" },
+    { label: "Forecast Ready", value: "30d", accent: "blue" },
   ];
 
+  const encodedShop = encodeURIComponent(shop || "");
+
   return (
-    <div>
-      {/* Summary row */}
-      <div style={{ display: "flex", gap: 16, marginBottom: 16 }}>
-        {stats.map(({ label, value }) => (
-          <div key={label} className="card" style={{ flex: 1, textAlign: "center" }}>
-            <p className="small">{label}</p>
-            <p style={{ fontSize: 32, fontWeight: 700, margin: "8px 0 0" }}>{value}</p>
+    <div className="dashboard-page">
+      <section className="metric-grid">
+        {stats.map(({ label, value, accent }) => (
+          <div key={label} className={`metric-card ${accent}`}>
+            <span>{label}</span>
+            <strong>{value}</strong>
+            <small>Connected to {shop || "your Shopify store"}</small>
           </div>
         ))}
-      </div>
+      </section>
 
-      <div className="card">
-        <h3>Welcome 👋</h3>
-        <p>
-          Viewing data for <strong>{shop || "your store"}</strong>.
-        </p>
-        <p className="small">
-          Use the navigation above to explore analytics, products, customers, and orders synced in real-time from Shopify via webhooks.
-        </p>
-      </div>
+      <section className="command-grid">
+        <div className="card launch-card">
+          <span className="section-kicker">Today in Xeno</span>
+          <h2>Everything your Shopify team needs, one click away.</h2>
+          <p>
+            Track sales movement, inspect customer behavior, review catalog data, and activate
+            prediction tools from a branded workspace designed for serious operators.
+          </p>
+          <div className="launch-actions">
+            <Link className="btn" to={`/analytics?shop=${encodedShop}`}>View analytics</Link>
+            <Link className="btn" to={`/orders?shop=${encodedShop}`}>Review orders</Link>
+          </div>
+        </div>
+
+        <div className="activity-card">
+          {MOMENTS.map((item, index) => (
+            <div key={item.label} className="activity-item" style={{ "--delay": `${index * 120}ms` }}>
+              <div className="activity-orb" />
+              <div>
+                <span>{item.label}</span>
+                <strong>{item.value}</strong>
+                <p>{item.detail}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

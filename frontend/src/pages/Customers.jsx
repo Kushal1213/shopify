@@ -10,13 +10,14 @@ export default function Customers() {
     shop ? `${API_BASE}/api/customers?shop=${shop}` : null
   );
 
-  if (loading) return <p className="small">Loading customers…</p>;
+  if (loading) return <p className="small">Loading customers...</p>;
 
   return (
     <div className="customers-container">
       <div className="customers-header">
-        <h2>Customers &amp; Orders</h2>
-        <p className="customers-subtitle">Shop: {shop}</p>
+        <span className="section-kicker">Customer intelligence</span>
+        <h2>Customers and orders</h2>
+        <p className="customers-subtitle">Shop: {shop || "your Shopify store"}</p>
       </div>
 
       {!customers?.length && <p className="customers-empty">No customers yet.</p>}
@@ -33,7 +34,7 @@ export default function Customers() {
               <div className="customer-meta">
                 <span className="meta-pill">Orders: {orders.length}</span>
                 <span className="meta-pill">
-                  Total: ₹{Number(c.total_spent ?? 0).toFixed(2)}
+                  Total: INR {Number(c.total_spent ?? 0).toFixed(2)}
                 </span>
               </div>
             </div>
@@ -46,7 +47,7 @@ export default function Customers() {
                     <span className="order-product">{o.product_name}</span>
                   </div>
                   <div className="order-meta">
-                    <span className="order-amount">₹{o.total_price}</span>
+                    <span className="order-amount">INR {o.total_price}</span>
                     <span className={`order-status status-${(o.status || "").toLowerCase()}`}>
                       {o.status || "Unknown"}
                     </span>

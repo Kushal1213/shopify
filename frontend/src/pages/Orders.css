@@ -1,98 +1,66 @@
-/* Container */
 .orders-container {
-  padding: 24px;
-  font-family: "Inter", sans-serif;
+  padding: 28px;
 }
 
-/* Header */
 .orders-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
 }
 
 .orders-header h2 {
-  margin: 0;
-  font-size: 22px;
-  font-weight: 600;
+  font-size: 28px;
+  margin: 8px 0 0;
 }
 
-/* Refresh Button */
 .refresh-btn {
-  background-color: #4a7dfc;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: 0.2s ease;
+  min-width: 108px;
 }
 
-.refresh-btn:hover {
-  background-color: #2f63e0;
-}
-
-/* Table */
 .orders-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 12px;
-  background: white;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  min-width: 780px;
+  background: rgba(255, 255, 255, 0.62);
+  border-radius: 16px;
 }
 
-.orders-table th {
-  background-color: #f5f6f8;
-  padding: 12px;
-  text-align: left;
-  font-size: 14px;
-  color: #333;
-  border-bottom: 1px solid #e2e2e2;
-}
-
-.orders-table td {
-  padding: 12px;
-  border-bottom: 1px solid #f0f0f0;
-  font-size: 14px;
-  color: #444;
-}
-
-/* Row Hover */
-.orders-table tr:hover td {
-  background-color: #f9fbff;
-}
-
-/* Status Badges */
 .status-badge {
-  padding: 4px 10px;
-  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 850;
   text-transform: capitalize;
 }
 
 .status-badge.paid {
-  background-color: #d1f4e0;
-  color: #0b7a37;
+  background: rgba(0, 128, 96, 0.13);
+  color: var(--green-700);
 }
 
 .status-badge.pending {
-  background-color: #fff4cc;
-  color: #b88a00;
+  background: rgba(245, 184, 65, 0.18);
+  color: #8a5c00;
 }
 
-.status-badge.refunded {
-  background-color: #ffe0e0;
-  color: #b30000;
+.status-badge.refunded,
+.status-badge.voided {
+  background: rgba(217, 45, 32, 0.12);
+  color: #b42318;
 }
 
-/* Loading & No Orders */
 .loading,
 .no-orders {
-  margin-top: 20px;
-  font-size: 15px;
+  color: var(--muted);
+  margin: 18px 0 0;
+}
+
+@media (max-width: 640px) {
+  .orders-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
