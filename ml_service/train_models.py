@@ -1,6 +1,6 @@
 """
 train_models.py
----------------
+-----------------
 Generates synthetic Shopify-like sales data, trains:
   1. Random Forest Regressor  → sales forecasting
   2. KMeans Clustering        → customer segmentation
