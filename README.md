@@ -1,5 +1,5 @@
 <div align="center">
-  <h1>🛍️ Shopify Xeno Pro</h1>
+  <h1>🛍️ Xeno Analytics Pro</h1>
   <p><strong>A full-stack Shopify embedded app</strong> — OAuth 2.0 authentication, real-time order webhooks, MySQL persistence, and an analytics dashboard built with React + Vite.</p>
 
   <p>
